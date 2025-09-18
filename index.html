@@ -10,8 +10,16 @@
     <div class="logo">
         <img src="assets/image/logo.png" alt="Logo" />
     </div>
-    <h1>Müşteri Satış Raporu</h1>
+    <h1 style="font-size: 1.25rem;">Müşteri Satış Raporu</h1>
+    <div>
+        <img  style="width: 75px; height: 75px;" src="assets/image/dostbahce.png" alt="Logo" />
+    </div>
+    <h1>(Dostbahçe Edition)</h1>
+
     <div class="container">
+          <div id="currentTemplate" style="font-size: 1rem; color: black; margin-top: 4px; margin-bottom: 8px; display: flex; justify-content: center;">
+                Varsayılan: <strong>tekil_musteri_sample.xlsx</strong>
+            </div>
         <div>
             <label for="uploadTemplate">Şablonu Yükle:</label>
             <input type="file" id="uploadTemplate" />
@@ -20,6 +28,7 @@
             <label for="uploadSalesData">Haftalık Müşteri Satış Tablosunu Yükle:</label>
             <input type="file" id="uploadSalesData" />
         </div>
+        
         <div>
             <label for="customerSelect">Müşteri Seç:</label>
             <select id="customerSelect">
@@ -31,10 +40,10 @@
             <button id="generateAllExcel" disabled>Toplu Excel Oluştur</button>
         </div>
     </div>
-    <footer>
-        &copy; 2024 Cor Yazılım Hizmetleri - Müşteri Raporlama Sistemi
-    </footer>
 
+<div style="margin-top: 2rem;">
+     &copy; 2024 Cor Yazılım Hizmetleri - Müşteri Raporlama Sistemi
+</div>
     <script src="assets/vendor/exceljs.min.js"></script>
     <script src="assets/vendor/xlsx.ful.min.js"></script>
     <script src="assets/vendor/jszip.min.js"></script>

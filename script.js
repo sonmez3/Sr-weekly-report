@@ -208,3 +208,28 @@ document.getElementById('generateAllExcel').addEventListener('click', async () =
         URL.revokeObjectURL(url);
     });
 });
+
+async function loadDefaultTemplate() {
+  try {
+    const response = await fetch("assets/tekil_musteri_sample.xlsx");
+    const arrayBuffer = await response.arrayBuffer();
+    templateWorkbook = arrayBuffer;
+    console.log("Varsayılan şablon yüklendi");
+  } catch (err) {
+    console.error("Varsayılan şablon yüklenemedi:", err);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", loadDefaultTemplate);
+
+document.getElementById("uploadTemplate").addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    templateWorkbook = e.target.result;
+    console.log("Kullanıcı kendi şablonunu yükledi");
+  };
+  reader.readAsArrayBuffer(file);
+});
