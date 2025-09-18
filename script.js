@@ -16,7 +16,6 @@ document.getElementById('uploadTemplate').addEventListener('change', async (even
     reader.readAsArrayBuffer(file);
 });
 
-// 1) SATIŞ DOSYASINI OKURKEN: raw:false ile formattı string al
 document.getElementById('uploadSalesData').addEventListener('change', (event) => {
   const file = event.target.files[0];
   const reader = new FileReader();
@@ -28,8 +27,6 @@ document.getElementById('uploadSalesData').addEventListener('change', (event) =>
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
-    // ÖNEMLİ: raw:false → hücrelerin gösterilen (string) değerini alır
-    // böylece uzun sayılar bilimsel gösterime düşmeden string olarak gelir.
     let json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
 
     groupedData = groupBySender(json);
@@ -122,7 +119,6 @@ function calculateTotalNavlun(data) {
     return total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// 2) EXCELJS'E YAZARKEN: ID ve TAKİP sütunlarını Text (@) yap ve stringe çevir
 async function fillTemplate(templateFile, sender, data, totalDebt) {
   const workbook = new ExcelJS.Workbook();
   let indexFormula = 5;
@@ -137,37 +133,29 @@ async function fillTemplate(templateFile, sender, data, totalDebt) {
   // );
   // sheet.getCell('L3').numFmt = '#,##0.00';
 
-  // Şu anki haliyle string ise dokunma:
   sheet.getCell('L3').value = totalDebt;
 
-  // Burada yazım hatası var: 0,0 → 0.0 olmalı
   sheet.getCell('L4').value = 0.0;
 
-  // Başlıklar
   const headers = data[0] || [];
   const dateColIdx   = headers.indexOf('TARİH');
   const idColIdx     = headers.indexOf('SHIPREADY ID');
   const takipColIdx  = headers.indexOf('TAKİP');
 
-  // Bu sütunların tamamını Text formatına al
   if (idColIdx !== -1)    sheet.getColumn(idColIdx + 1).numFmt = '@';
   if (takipColIdx !== -1) sheet.getColumn(takipColIdx + 1).numFmt = '@';
 
-  // Satır ekleme
   data.slice(1).forEach((row, index) => {
     indexFormula++;
 
-    // Çalışacağımız kopya (orijinali bozma)
     const r = Array.isArray(row) ? [...row] : row;
 
-    // TARİH sayısal geldiyse Date stringe çevir
     if (dateColIdx !== -1 && typeof r[dateColIdx] === 'number') {
       r[dateColIdx] = excelDateToJSDate(r[dateColIdx]).toLocaleDateString('tr-TR');
     }
 
-    // UZUN NUMARALARI STRINGE ZORLA (bilimsel gösterimi önler, precision’ı korur)
     if (idColIdx !== -1 && r[idColIdx] != null) {
-      r[idColIdx] = String(r[idColIdx]); // başına ' eklemene gerek yok
+      r[idColIdx] = String(r[idColIdx]); 
     }
     if (takipColIdx !== -1 && r[takipColIdx] != null) {
       r[takipColIdx] = String(r[takipColIdx]);
@@ -175,7 +163,6 @@ async function fillTemplate(templateFile, sender, data, totalDebt) {
 
     const newRow = sheet.insertRow(startRow + index, r);
 
-    // Stil kopyalama (varsa şablondaki ilk veri satırından)
     r.forEach((_, colIndex) => {
       const sourceCell = sheet.getRow(startRow).getCell(colIndex + 1);
       const targetCell = newRow.getCell(colIndex + 1);
@@ -183,7 +170,6 @@ async function fillTemplate(templateFile, sender, data, totalDebt) {
     });
   });
 
-  // Formül
   const indexFormulaText         = "L" + indexFormula;
   const indexFormulaTextOneUpper = "L" + (indexFormula - 1);
   const indexFormulaTextTwoUpper = "L" + (indexFormula - 2);
