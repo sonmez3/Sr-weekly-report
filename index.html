@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müşteri Satış Raporu</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="logo">
+        <img src="assets/image/logo.png" alt="Logo" />
+    </div>
+    <h1>Müşteri Satış Raporu</h1>
+    <div class="container">
+        <div>
+            <label for="uploadTemplate">Şablonu Yükle:</label>
+            <input type="file" id="uploadTemplate" />
+        </div>
+        <div>
+            <label for="uploadSalesData">Haftalık Müşteri Satış Tablosunu Yükle:</label>
+            <input type="file" id="uploadSalesData" />
+        </div>
+        <div>
+            <label for="customerSelect">Müşteri Seç:</label>
+            <select id="customerSelect">
+                <option value="">Müşteri seçin</option>
+            </select>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <button id="generateExcel" disabled>Excel Oluştur</button>
+            <button id="generateAllExcel" disabled>Toplu Excel Oluştur</button>
+        </div>
+    </div>
+    <footer>
+        &copy; 2024 Cor Yazılım Hizmetleri - Müşteri Raporlama Sistemi
+    </footer>
+
+    <script src="assets/vendor/exceljs.min.js"></script>
+    <script src="assets/vendor/xlsx.ful.min.js"></script>
+    <script src="assets/vendor/jszip.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
