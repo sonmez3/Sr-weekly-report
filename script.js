@@ -100,25 +100,84 @@ document.getElementById('generateExcel').addEventListener('click', async () => {
     URL.revokeObjectURL(url);
 });
 
-function calculateTotalNavlun(data) {
-    console.log(data)
-    const headers = data[0];
-    const navlunIndex = headers.indexOf('NAVLUN TOTAL');
+// function calculateTotalNavlun(data) {
+//     console.log(data)
+//     const headers = data[0];
+//     const navlunIndex = headers.indexOf('NAVLUN TOTAL');
 
-    if (navlunIndex === -1) {
-        console.warn("NAVLUN sütunu bulunamadı.");
-        return 0;
-    }
+//     if (navlunIndex === -1) {
+//         console.warn("NAVLUN sütunu bulunamadı.");
+//         return 0;
+//     }
 
-    let total = 0;
-    for (let i = 1; i < data.length; i++) {
-        const navlun = parseFloat(data[i][navlunIndex]) || 0;
-        total += navlun;
-    }
-    console.log(total)
-    return total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+//     let total = 0;
+//     for (let i = 1; i < data.length; i++) {
+//         const navlun = parseFloat(data[i][navlunIndex]) || 0;
+//         total += navlun;
+//     }
+//     console.log(total)
+//     return total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// }
 
+// async function fillTemplate(templateFile, sender, data, totalDebt) {
+//   const workbook = new ExcelJS.Workbook();
+//   let indexFormula = 5;
+//   await workbook.xlsx.load(templateFile);
+
+//   const sheet = workbook.getWorksheet(1);
+//   const startRow = 2;
+
+//   // Toplamı sayı olarak yazmak istiyorsan numFmt kullan (yoksa string kalsın)
+//   // sheet.getCell('L3').value = Number(
+//   //   (totalDebt || '0').toString().replace(/\./g,'').replace(',', '.')
+//   // );
+//   // sheet.getCell('L3').numFmt = '#,##0.00';
+
+//   sheet.getCell('L3').value = totalDebt;
+
+//   sheet.getCell('L4').value = 0.0;
+
+//   const headers = data[0] || [];
+//   const dateColIdx   = headers.indexOf('TARİH');
+//   const idColIdx     = headers.indexOf('SHIPREADY ID');
+//   const takipColIdx  = headers.indexOf('TAKİP');
+
+//   if (idColIdx !== -1)    sheet.getColumn(idColIdx + 1).numFmt = '@';
+//   if (takipColIdx !== -1) sheet.getColumn(takipColIdx + 1).numFmt = '@';
+
+//   data.slice(1).forEach((row, index) => {
+//     indexFormula++;
+
+//     const r = Array.isArray(row) ? [...row] : row;
+
+//     if (dateColIdx !== -1 && typeof r[dateColIdx] === 'number') {
+//       r[dateColIdx] = excelDateToJSDate(r[dateColIdx]).toLocaleDateString('tr-TR');
+//     }
+
+//     if (idColIdx !== -1 && r[idColIdx] != null) {
+//       r[idColIdx] = String(r[idColIdx]); 
+//     }
+//     if (takipColIdx !== -1 && r[takipColIdx] != null) {
+//       r[takipColIdx] = String(r[takipColIdx]);
+//     }
+
+//     const newRow = sheet.insertRow(startRow + index, r);
+
+//     r.forEach((_, colIndex) => {
+//       const sourceCell = sheet.getRow(startRow).getCell(colIndex + 1);
+//       const targetCell = newRow.getCell(colIndex + 1);
+//       targetCell.style = { ...sourceCell.style };
+//     });
+//   });
+
+//   const indexFormulaText         = "L" + indexFormula;
+//   const indexFormulaTextOneUpper = "L" + (indexFormula - 1);
+//   const indexFormulaTextTwoUpper = "L" + (indexFormula - 2);
+//   sheet.getCell(indexFormulaText).value = { formula: `${indexFormulaTextOneUpper} + ${indexFormulaTextTwoUpper}` };
+
+//   const buffer = await workbook.xlsx.writeBuffer();
+//   return buffer;
+// }
 async function fillTemplate(templateFile, sender, data, totalDebt) {
   const workbook = new ExcelJS.Workbook();
   let indexFormula = 5;
@@ -127,49 +186,76 @@ async function fillTemplate(templateFile, sender, data, totalDebt) {
   const sheet = workbook.getWorksheet(1);
   const startRow = 2;
 
-  // Toplamı sayı olarak yazmak istiyorsan numFmt kullan (yoksa string kalsın)
-  // sheet.getCell('L3').value = Number(
-  //   (totalDebt || '0').toString().replace(/\./g,'').replace(',', '.')
-  // );
-  // sheet.getCell('L3').numFmt = '#,##0.00';
-
-  sheet.getCell('L3').value = totalDebt;
+  // TOPLAM: sayı olarak yaz + format
+  sheet.getCell('L3').value = Number(totalDebt || 0);
+  sheet.getCell('L3').numFmt = '#,##0.00';
 
   sheet.getCell('L4').value = 0.0;
+  sheet.getCell('L4').numFmt = '#,##0.00';
 
-  const headers = data[0] || [];
+  const headers      = data[0] || [];
   const dateColIdx   = headers.indexOf('TARİH');
   const idColIdx     = headers.indexOf('SHIPREADY ID');
   const takipColIdx  = headers.indexOf('TAKİP');
+  const navlunColIdx = headers.indexOf('NAVLUN TOTAL'); // M sütunu beklenen
 
+  // Metin olarak kalması gerekenler
   if (idColIdx !== -1)    sheet.getColumn(idColIdx + 1).numFmt = '@';
   if (takipColIdx !== -1) sheet.getColumn(takipColIdx + 1).numFmt = '@';
+
+  // NAVLUN sütunu sayı formatı (kolon seviyesinde)
+  if (navlunColIdx !== -1) {
+    sheet.getColumn(navlunColIdx + 1).numFmt = '#,##0.00';
+  }
+
+  // Yardımcı: "12,34" veya "12.34" -> number
+  const toNumber = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    // virgüllü veya noktalı ondalıklar için normalize et
+    const s = String(v).replace(/\./g, '.').replace(/,/g, '.');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : null;
+  };
 
   data.slice(1).forEach((row, index) => {
     indexFormula++;
 
     const r = Array.isArray(row) ? [...row] : row;
 
+    // Tarih kolonu Excel seri sayıysa TR formatlı stringe çevir
     if (dateColIdx !== -1 && typeof r[dateColIdx] === 'number') {
       r[dateColIdx] = excelDateToJSDate(r[dateColIdx]).toLocaleDateString('tr-TR');
     }
 
-    if (idColIdx !== -1 && r[idColIdx] != null) {
-      r[idColIdx] = String(r[idColIdx]); 
-    }
-    if (takipColIdx !== -1 && r[takipColIdx] != null) {
-      r[takipColIdx] = String(r[takipColIdx]);
+    // ID ve TAKİP metin kalsın
+    if (idColIdx !== -1 && r[idColIdx] != null)      r[idColIdx] = String(r[idColIdx]);
+    if (takipColIdx !== -1 && r[takipColIdx] != null) r[takipColIdx] = String(r[takipColIdx]);
+
+    // NAVLUN’u (M sütunu) satır dizisinde şimdiden Number’a çevir (varsa)
+    if (navlunColIdx !== -1 && r[navlunColIdx] != null) {
+      const num = toNumber(r[navlunColIdx]);
+      r[navlunColIdx] = num; // null da olabilir; Excel boş hücre olarak kalır
     }
 
+    // Satırı ekle
     const newRow = sheet.insertRow(startRow + index, r);
 
+    // Stil kopyala
     r.forEach((_, colIndex) => {
       const sourceCell = sheet.getRow(startRow).getCell(colIndex + 1);
       const targetCell = newRow.getCell(colIndex + 1);
       targetCell.style = { ...sourceCell.style };
+
+      // NAVLUN hücresi ise (M), değeri Number olarak yaz ve numFmt’i en sonda tekrar ver
+      if (navlunColIdx !== -1 && colIndex === navlunColIdx) {
+        const num = toNumber(targetCell.value);
+        targetCell.value = num; // gerçek sayı olarak
+        targetCell.numFmt = '#,##0.00';
+      }
     });
   });
 
+  // Alttaki formülü koru
   const indexFormulaText         = "L" + indexFormula;
   const indexFormulaTextOneUpper = "L" + (indexFormula - 1);
   const indexFormulaTextTwoUpper = "L" + (indexFormula - 2);
@@ -177,6 +263,23 @@ async function fillTemplate(templateFile, sender, data, totalDebt) {
 
   const buffer = await workbook.xlsx.writeBuffer();
   return buffer;
+}
+
+// Toplamı number döndür (değişmedi)
+function calculateTotalNavlun(data) {
+  const headers = data[0];
+  const navlunIndex = headers.indexOf('NAVLUN TOTAL');
+  if (navlunIndex === -1) {
+    console.warn("NAVLUN sütunu bulunamadı.");
+    return 0;
+  }
+  let total = 0;
+  for (let i = 1; i < data.length; i++) {
+    const raw = data[i][navlunIndex];
+    const val = raw == null ? 0 : parseFloat(String(raw).replace(',', '.')) || 0;
+    total += val;
+  }
+  return total; // <-- number
 }
 
 
